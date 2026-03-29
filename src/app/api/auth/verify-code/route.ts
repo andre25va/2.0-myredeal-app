@@ -38,9 +38,9 @@ export async function POST(req: NextRequest) {
     // Mark code as used
     await supabase.from('auth_codes').update({ used: true }).eq('id', authCode.id)
 
-    // Find the user in Supabase Auth
+    // Find or create the user in Supabase Auth
     const { data: { users }, error: userError } = await supabase.auth.admin.listUsers()
-    const user = users?.find(u => u.email === authCode.email)
+    let user = users?.find(u => u.email === authCode.email)
 
     if (!user || userError) {
       // Create the user if they don't exist
@@ -54,36 +54,25 @@ export async function POST(req: NextRequest) {
         console.error('Failed to create user:', createError)
         return NextResponse.json({ error: 'Failed to create account' }, { status: 500 })
       }
-
-      // Generate magic link for the new user
-      const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-        type: 'magiclink',
-        email: authCode.email,
-      })
-
-      if (linkError || !linkData) {
-        return NextResponse.json({ error: 'Failed to generate session' }, { status: 500 })
-      }
-
-      return NextResponse.json({
-        success: true,
-        redirect: linkData.properties?.action_link,
-      })
+      user = newUser.user
     }
 
-    // Generate magic link for existing user
+    // Generate magic link to get the token hash (not for redirect)
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
       type: 'magiclink',
       email: authCode.email,
     })
 
     if (linkError || !linkData) {
-      return NextResponse.json({ error: 'Failed to generate session' }, { status: 500 })
+      console.error('Failed to generate link:', linkError)
+      return NextResponse.json({ error: 'Failed to create session' }, { status: 500 })
     }
 
+    // Return the token hash so the client can verify locally
     return NextResponse.json({
       success: true,
-      redirect: linkData.properties?.action_link,
+      token_hash: linkData.properties?.hashed_token,
+      email: authCode.email,
     })
   } catch (err) {
     console.error('Verify code error:', err)

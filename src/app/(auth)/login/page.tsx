@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { createBrowserClient } from '@supabase/ssr'
 
 export default function LoginPage() {
   const [phone, setPhone] = useState('')
@@ -94,6 +95,7 @@ export default function LoginPage() {
     setError('')
 
     try {
+      // Step 1: Verify code with our API
       const res = await fetch('/api/auth/verify-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -102,10 +104,27 @@ export default function LoginPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Invalid code')
 
-      if (data.redirect) {
-        window.location.href = data.redirect
-      } else {
+      // Step 2: Use token_hash to establish session client-side
+      if (data.token_hash) {
+        const supabase = createBrowserClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        )
+
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+          token_hash: data.token_hash,
+          type: 'magiclink',
+        })
+
+        if (verifyError) {
+          console.error('Session error:', verifyError)
+          throw new Error('Failed to establish session')
+        }
+
+        // Session established! Redirect to dashboard
         window.location.href = '/dashboard'
+      } else {
+        throw new Error('No session token received')
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Invalid code'
