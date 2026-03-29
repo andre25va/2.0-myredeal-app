@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 
 export default function LoginPage() {
   const [phone, setPhone] = useState('')
@@ -10,8 +9,7 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [codeSent, setCodeSent] = useState(false)
   const [otpCode, setOtpCode] = useState('')
-  const [method, setMethod] = useState<'sms' | 'email' | null>(null)
-  const [userEmail, setUserEmail] = useState('')
+  const [maskedEmail, setMaskedEmail] = useState('')
 
   const formatPhone = (value: string) => {
     const digits = value.replace(/\D/g, '')
@@ -41,16 +39,17 @@ export default function LoginPage() {
     setMessage('')
 
     try {
-      const supabase = createClient()
-      const { error: authError } = await supabase.auth.signInWithOtp({
-        phone: getRawPhone(),
+      const res = await fetch('/api/auth/send-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: getRawPhone(), method: 'sms' }),
       })
-      if (authError) throw authError
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to send SMS')
       setCodeSent(true)
-      setMethod('sms')
-      setMessage('Code sent via SMS!')
+      setMessage(data.message)
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to send SMS code'
+      const msg = err instanceof Error ? err.message : 'Failed to send code'
       setError(msg)
     } finally {
       setLoading(null)
@@ -68,38 +67,18 @@ export default function LoginPage() {
     setMessage('')
 
     try {
-      // Look up email by phone number via API
-      const res = await fetch('/api/auth/lookup', {
+      const res = await fetch('/api/auth/send-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: getRawPhone() }),
+        body: JSON.stringify({ phone: getRawPhone(), method: 'email' }),
       })
-
-      // Handle non-JSON responses gracefully
-      let data
-      try {
-        data = await res.json()
-      } catch {
-        throw new Error('Server error. Please try again in a moment.')
-      }
-
-      if (!res.ok || !data.email) {
-        throw new Error(data?.error || 'Phone number not found. Only authorized TC staff can log in.')
-      }
-
-      // Store email for verification step
-      setUserEmail(data.email)
-
-      const supabase = createClient()
-      const { error: authError } = await supabase.auth.signInWithOtp({
-        email: data.email,
-      })
-      if (authError) throw authError
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to send email')
+      setMaskedEmail(data.maskedEmail)
       setCodeSent(true)
-      setMethod('email')
-      setMessage(`Code sent to ${data.email}!`)
+      setMessage(data.message)
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to send email code'
+      const msg = err instanceof Error ? err.message : 'Failed to send code'
       setError(msg)
     } finally {
       setLoading(null)
@@ -111,31 +90,25 @@ export default function LoginPage() {
       setError('Please enter the 6-digit code')
       return
     }
-    setLoading(method)
+    setLoading('email')
     setError('')
 
     try {
-      const supabase = createClient()
+      const res = await fetch('/api/auth/verify-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: getRawPhone(), code: otpCode }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Invalid code')
 
-      if (method === 'sms') {
-        const { error: authError } = await supabase.auth.verifyOtp({
-          phone: getRawPhone(),
-          token: otpCode,
-          type: 'sms',
-        })
-        if (authError) throw authError
+      if (data.redirect) {
+        window.location.href = data.redirect
       } else {
-        const { error: authError } = await supabase.auth.verifyOtp({
-          email: userEmail,
-          token: otpCode,
-          type: 'email',
-        })
-        if (authError) throw authError
+        window.location.href = '/dashboard'
       }
-
-      window.location.href = '/dashboard'
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Invalid code. Please try again.'
+      const msg = err instanceof Error ? err.message : 'Invalid code'
       setError(msg)
     } finally {
       setLoading(null)
@@ -156,7 +129,7 @@ export default function LoginPage() {
             <div>
               <h1 className="text-xl font-bold text-gray-900">Sign in</h1>
               <p className="text-sm text-gray-500 mt-0.5">
-                {codeSent ? 'Enter the code we sent you' : 'Enter your number to receive a code'}
+                {codeSent ? `Enter the code sent to ${maskedEmail}` : 'Enter your number to receive a code'}
               </p>
             </div>
           </div>
@@ -194,7 +167,7 @@ export default function LoginPage() {
               <button
                 onClick={handleSendEmail}
                 disabled={loading !== null}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-500 font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="2" y="4" width="20" height="16" rx="2"/>
@@ -232,8 +205,8 @@ export default function LoginPage() {
 
               {/* Back Button */}
               <button
-                onClick={() => { setCodeSent(false); setOtpCode(''); setMessage(''); setError(''); setUserEmail('') }}
-                className="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-500 font-medium rounded-xl transition-colors"
+                onClick={() => { setCodeSent(false); setOtpCode(''); setMessage(''); setError(''); setMaskedEmail('') }}
+                className="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors"
               >
                 Try a different number
               </button>
