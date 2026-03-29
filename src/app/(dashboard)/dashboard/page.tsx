@@ -12,8 +12,8 @@ export default function DashboardPage() {
     <div>
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-        <p className="text-sm text-gray-400 mt-1">Welcome to MyReDeal 2.0</p>
+        <h1 className="text-2xl font-bold text-brand-text">Dashboard</h1>
+        <p className="text-sm text-brand-text-muted mt-1">Welcome to MyReDeal 2.0</p>
       </div>
 
       {/* Stats Grid */}
@@ -21,14 +21,14 @@ export default function DashboardPage() {
         {stats.map((stat) => (
           <div
             key={stat.name}
-            className="rounded-xl border border-brand-border bg-brand-card p-5"
+            className="rounded-xl border border-brand-border bg-brand-card p-5 shadow-sm"
           >
             <div className="flex items-center justify-between mb-3">
               <stat.icon className={`h-5 w-5 ${stat.color}`} />
-              <TrendingUp className="h-4 w-4 text-gray-600" />
+              <TrendingUp className="h-4 w-4 text-brand-text-muted" />
             </div>
-            <p className="text-2xl font-bold text-white">{stat.value}</p>
-            <p className="text-sm text-gray-400 mt-1">{stat.name}</p>
+            <p className="text-2xl font-bold text-brand-text">{stat.value}</p>
+            <p className="text-sm text-brand-text-muted mt-1">{stat.name}</p>
           </div>
         ))}
       </div>
@@ -36,29 +36,29 @@ export default function DashboardPage() {
       {/* Recent Activity + Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Activity */}
-        <div className="rounded-xl border border-brand-border bg-brand-card p-6">
-          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <Clock className="h-5 w-5 text-gray-400" />
+        <div className="rounded-xl border border-brand-border bg-brand-card p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-brand-text mb-4 flex items-center gap-2">
+            <Clock className="h-5 w-5 text-brand-text-muted" />
             Recent Activity
           </h2>
-          <div className="flex items-center justify-center h-32 text-gray-500 text-sm">
+          <div className="flex items-center justify-center h-32 text-brand-text-muted text-sm">
             No recent activity
           </div>
         </div>
 
         {/* Quick Actions */}
-        <div className="rounded-xl border border-brand-border bg-brand-card p-6">
-          <h2 className="text-lg font-semibold text-white mb-4">Quick Actions</h2>
+        <div className="rounded-xl border border-brand-border bg-brand-card p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-brand-text mb-4">Quick Actions</h2>
           <div className="space-y-3">
-            <button className="w-full flex items-center gap-3 rounded-lg border border-brand-border bg-brand-bg px-4 py-3 text-sm text-gray-300 hover:border-brand-primary hover:text-white transition-colors">
+            <button className="w-full flex items-center gap-3 rounded-lg border border-brand-border bg-brand-bg px-4 py-3 text-sm text-brand-text-secondary hover:border-brand-primary hover:text-brand-primary transition-colors">
               <FileText className="h-4 w-4 text-brand-primary" />
               Create New Deal
             </button>
-            <button className="w-full flex items-center gap-3 rounded-lg border border-brand-border bg-brand-bg px-4 py-3 text-sm text-gray-300 hover:border-brand-primary hover:text-white transition-colors">
+            <button className="w-full flex items-center gap-3 rounded-lg border border-brand-border bg-brand-bg px-4 py-3 text-sm text-brand-text-secondary hover:border-brand-primary hover:text-brand-primary transition-colors">
               <Users className="h-4 w-4 text-side-buy" />
               Add Contact
             </button>
-            <button className="w-full flex items-center gap-3 rounded-lg border border-brand-border bg-brand-bg px-4 py-3 text-sm text-gray-300 hover:border-brand-primary hover:text-white transition-colors">
+            <button className="w-full flex items-center gap-3 rounded-lg border border-brand-border bg-brand-bg px-4 py-3 text-sm text-brand-text-secondary hover:border-brand-primary hover:text-brand-primary transition-colors">
               <CheckSquare className="h-4 w-4 text-brand-warning" />
               View All Tasks
             </button>

@@ -33,7 +33,7 @@ export function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-brand-border bg-brand-card">
+    <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-brand-border bg-brand-card shadow-sm">
       <div className="flex h-full flex-col">
         {/* Logo */}
         <div className="flex h-16 items-center gap-2 px-6 border-b border-brand-border">
@@ -55,7 +55,7 @@ export function Sidebar() {
                   'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                   isActive
                     ? 'bg-brand-primary/10 text-brand-primary'
-                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                    : 'text-brand-text-secondary hover:bg-brand-bg hover:text-brand-text'
                 )}
               >
                 <item.icon className="h-5 w-5 shrink-0" />
@@ -77,7 +77,7 @@ export function Sidebar() {
                   'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                   isActive
                     ? 'bg-brand-primary/10 text-brand-primary'
-                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                    : 'text-brand-text-secondary hover:bg-brand-bg hover:text-brand-text'
                 )}
               >
                 <item.icon className="h-5 w-5 shrink-0" />

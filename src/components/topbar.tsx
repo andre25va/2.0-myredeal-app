@@ -16,38 +16,38 @@ export function Topbar() {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-brand-border bg-brand-card/80 backdrop-blur-sm px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-brand-border bg-brand-card/95 backdrop-blur-sm px-6 shadow-sm">
       {/* Search */}
       <div className="flex items-center gap-3 flex-1 max-w-md">
-        <Search className="h-4 w-4 text-gray-500" />
+        <Search className="h-4 w-4 text-brand-text-muted" />
         <input
           type="text"
           placeholder="Search deals, contacts, tasks..."
-          className="bg-transparent text-sm text-white placeholder:text-gray-500 outline-none w-full"
+          className="bg-transparent text-sm text-brand-text placeholder:text-brand-text-muted outline-none w-full"
         />
       </div>
 
       {/* Right side */}
       <div className="flex items-center gap-4">
         {/* Notifications */}
-        <button className="relative p-2 text-gray-400 hover:text-white transition-colors">
+        <button className="relative p-2 text-brand-text-muted hover:text-brand-text transition-colors">
           <Bell className="h-5 w-5" />
           <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-brand-primary" />
         </button>
 
         {/* User menu */}
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-full bg-brand-primary/20 flex items-center justify-center">
+          <div className="h-8 w-8 rounded-full bg-brand-primary/10 flex items-center justify-center">
             <span className="text-xs font-medium text-brand-primary">
               {user?.email?.charAt(0).toUpperCase() || 'U'}
             </span>
           </div>
           <div className="hidden sm:block">
-            <p className="text-sm font-medium text-white">{user?.email || 'Loading...'}</p>
+            <p className="text-sm font-medium text-brand-text">{user?.email || 'Loading...'}</p>
           </div>
           <button
             onClick={handleSignOut}
-            className="p-2 text-gray-400 hover:text-white transition-colors"
+            className="p-2 text-brand-text-muted hover:text-brand-text transition-colors"
             title="Sign out"
           >
             <LogOut className="h-4 w-4" />

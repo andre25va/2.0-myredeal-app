@@ -55,9 +55,9 @@ export default function LoginPage() {
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand-primary/10">
           <Mail className="h-6 w-6 text-brand-primary" />
         </div>
-        <h2 className="text-xl font-semibold text-white mb-2">Check your email</h2>
-        <p className="text-gray-400 text-sm">
-          We sent a magic link to <span className="text-white font-medium">{email}</span>
+        <h2 className="text-xl font-semibold text-brand-text mb-2">Check your email</h2>
+        <p className="text-brand-text-muted text-sm">
+          We sent a magic link to <span className="text-brand-text font-medium">{email}</span>
         </p>
         <button
           onClick={() => setMagicSent(false)}
@@ -71,8 +71,8 @@ export default function LoginPage() {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold text-white mb-1">Welcome back</h2>
-      <p className="text-sm text-gray-400 mb-6">Sign in to your account</p>
+      <h2 className="text-xl font-semibold text-brand-text mb-1">Welcome back</h2>
+      <p className="text-sm text-brand-text-muted mb-6">Sign in to your account</p>
 
       {error && (
         <div className="mb-4 rounded-lg bg-brand-error/10 border border-brand-error/20 px-4 py-3 text-sm text-brand-error">
@@ -83,32 +83,32 @@ export default function LoginPage() {
       <form onSubmit={mode === 'password' ? handlePasswordLogin : handleMagicLink}>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">Email</label>
+            <label className="block text-sm font-medium text-brand-text-secondary mb-1.5">Email</label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-text-muted" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@company.com"
                 required
-                className="w-full rounded-lg border border-brand-border bg-brand-bg pl-10 pr-4 py-2.5 text-sm text-white placeholder:text-gray-500 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-colors"
+                className="w-full rounded-lg border border-brand-border bg-brand-bg pl-10 pr-4 py-2.5 text-sm text-brand-text placeholder:text-brand-text-muted outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-colors"
               />
             </div>
           </div>
 
           {mode === 'password' && (
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">Password</label>
+              <label className="block text-sm font-medium text-brand-text-secondary mb-1.5">Password</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-text-muted" />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
                   required
-                  className="w-full rounded-lg border border-brand-border bg-brand-bg pl-10 pr-4 py-2.5 text-sm text-white placeholder:text-gray-500 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-colors"
+                  className="w-full rounded-lg border border-brand-border bg-brand-bg pl-10 pr-4 py-2.5 text-sm text-brand-text placeholder:text-brand-text-muted outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-colors"
                 />
               </div>
             </div>
@@ -134,7 +134,7 @@ export default function LoginPage() {
       <div className="mt-4 text-center">
         <button
           onClick={() => setMode(mode === 'password' ? 'magic' : 'password')}
-          className="text-sm text-gray-400 hover:text-brand-primary transition-colors"
+          className="text-sm text-brand-text-muted hover:text-brand-primary transition-colors"
         >
           {mode === 'password' ? 'Use magic link instead' : 'Use password instead'}
         </button>

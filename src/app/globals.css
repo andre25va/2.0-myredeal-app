@@ -3,16 +3,16 @@
 @tailwind utilities;
 
 :root {
-  --bg-primary: #13141A;
-  --bg-card: #1C1D25;
-  --border-color: #2A2B35;
+  --bg-primary: #F8F9FC;
+  --bg-card: #FFFFFF;
+  --border-color: #E2E4EA;
   --accent-primary: #7C5CFC;
   --accent-hover: #6B4FE0;
 }
 
 body {
   background-color: var(--bg-primary);
-  color: #FFFFFF;
+  color: #1A1A2E;
 }
 
 /* Custom scrollbar */
@@ -23,9 +23,9 @@ body {
   background: var(--bg-primary);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-color);
+  background: #C8CAD0;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3A3B45;
+  background: #A0A3AB;
 }

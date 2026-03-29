@@ -11,11 +11,11 @@ export default function AuthLayout({
         <Logo size="lg" />
       </div>
       <div className="w-full max-w-md">
-        <div className="rounded-xl border border-brand-border bg-brand-card p-8 shadow-xl">
+        <div className="rounded-xl border border-brand-border bg-brand-card p-8 shadow-lg">
           {children}
         </div>
       </div>
-      <p className="mt-6 text-sm text-gray-500">
+      <p className="mt-6 text-sm text-brand-text-muted">
         © 2024 MyReDeal. All rights reserved.
       </p>
     </div>

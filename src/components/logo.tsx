@@ -14,9 +14,9 @@ export function Logo({ size = 'md', className }: LogoProps) {
 
   return (
     <div className={cn('font-bold tracking-tight', sizes[size], className)}>
-      <span className="text-white">My</span>
+      <span className="text-brand-text">My</span>
       <span className="text-brand-primary">Re</span>
-      <span className="text-white">Deal</span>
+      <span className="text-brand-text">Deal</span>
     </div>
   )
 }
