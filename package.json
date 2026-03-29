@@ -16,7 +16,9 @@
     "@supabase/ssr": "^0.5.2",
     "clsx": "^2.1.1",
     "tailwind-merge": "^2.6.0",
-    "lucide-react": "^0.468.0"
+    "lucide-react": "^0.468.0",
+    "openai": "^4.77.0",
+    "pdf-parse": "^1.1.1"
   },
   "devDependencies": {
     "typescript": "^5.7.2",
