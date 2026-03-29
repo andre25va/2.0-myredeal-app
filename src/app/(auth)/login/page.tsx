@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [codeSent, setCodeSent] = useState(false)
   const [otpCode, setOtpCode] = useState('')
   const [method, setMethod] = useState<'sms' | 'email' | null>(null)
+  const [userEmail, setUserEmail] = useState('')
 
   const formatPhone = (value: string) => {
     const digits = value.replace(/\D/g, '')
@@ -73,11 +74,21 @@ export default function LoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: getRawPhone() }),
       })
-      const data = await res.json()
+
+      // Handle non-JSON responses gracefully
+      let data
+      try {
+        data = await res.json()
+      } catch {
+        throw new Error('Server error. Please try again in a moment.')
+      }
 
       if (!res.ok || !data.email) {
-        throw new Error('Phone number not found. Only authorized TC staff can log in.')
+        throw new Error(data?.error || 'Phone number not found. Only authorized TC staff can log in.')
       }
+
+      // Store email for verification step
+      setUserEmail(data.email)
 
       const supabase = createClient()
       const { error: authError } = await supabase.auth.signInWithOtp({
@@ -86,7 +97,7 @@ export default function LoginPage() {
       if (authError) throw authError
       setCodeSent(true)
       setMethod('email')
-      setMessage('Code sent to your email!')
+      setMessage(`Code sent to ${data.email}!`)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to send email code'
       setError(msg)
@@ -114,16 +125,8 @@ export default function LoginPage() {
         })
         if (authError) throw authError
       } else {
-        // For email magic link, the code is verified via the link
-        // This is a fallback for email OTP if enabled
-        const res = await fetch('/api/auth/lookup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: getRawPhone() }),
-        })
-        const data = await res.json()
         const { error: authError } = await supabase.auth.verifyOtp({
-          email: data.email,
+          email: userEmail,
           token: otpCode,
           type: 'email',
         })
@@ -229,7 +232,7 @@ export default function LoginPage() {
 
               {/* Back Button */}
               <button
-                onClick={() => { setCodeSent(false); setOtpCode(''); setMessage(''); setError('') }}
+                onClick={() => { setCodeSent(false); setOtpCode(''); setMessage(''); setError(''); setUserEmail('') }}
                 className="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-500 font-medium rounded-xl transition-colors"
               >
                 Try a different number
