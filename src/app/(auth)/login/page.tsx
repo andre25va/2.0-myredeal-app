@@ -2,142 +2,254 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
-import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react'
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [phone, setPhone] = useState('')
+  const [loading, setLoading] = useState<'sms' | 'email' | null>(null)
+  const [message, setMessage] = useState('')
   const [error, setError] = useState('')
-  const [mode, setMode] = useState<'password' | 'magic'>('password')
-  const [magicSent, setMagicSent] = useState(false)
-  const router = useRouter()
+  const [codeSent, setCodeSent] = useState(false)
+  const [otpCode, setOtpCode] = useState('')
+  const [method, setMethod] = useState<'sms' | 'email' | null>(null)
 
-  const handlePasswordLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
+  const formatPhone = (value: string) => {
+    const digits = value.replace(/\D/g, '')
+    if (digits.length <= 3) return digits.length ? `(${digits}` : ''
+    if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`
+  }
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhone(e.target.value)
+    setPhone(formatted)
+  }
+
+  const getRawPhone = () => {
+    const digits = phone.replace(/\D/g, '')
+    return `+1${digits}`
+  }
+
+  const handleSendSMS = async () => {
+    const digits = phone.replace(/\D/g, '')
+    if (digits.length !== 10) {
+      setError('Please enter a valid 10-digit phone number')
+      return
+    }
+    setLoading('sms')
     setError('')
+    setMessage('')
 
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-    } else {
-      router.push('/dashboard')
+    try {
+      const supabase = createClient()
+      const { error: authError } = await supabase.auth.signInWithOtp({
+        phone: getRawPhone(),
+      })
+      if (authError) throw authError
+      setCodeSent(true)
+      setMethod('sms')
+      setMessage('Code sent via SMS!')
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to send SMS code'
+      setError(msg)
+    } finally {
+      setLoading(null)
     }
   }
 
-  const handleMagicLink = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${window.location.origin}/callback` },
-    })
-
-    if (error) {
-      setError(error.message)
-    } else {
-      setMagicSent(true)
+  const handleSendEmail = async () => {
+    const digits = phone.replace(/\D/g, '')
+    if (digits.length !== 10) {
+      setError('Please enter a valid 10-digit phone number')
+      return
     }
-    setLoading(false)
+    setLoading('email')
+    setError('')
+    setMessage('')
+
+    try {
+      // Look up email by phone number via API
+      const res = await fetch('/api/auth/lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: getRawPhone() }),
+      })
+      const data = await res.json()
+
+      if (!res.ok || !data.email) {
+        throw new Error('Phone number not found. Only authorized TC staff can log in.')
+      }
+
+      const supabase = createClient()
+      const { error: authError } = await supabase.auth.signInWithOtp({
+        email: data.email,
+      })
+      if (authError) throw authError
+      setCodeSent(true)
+      setMethod('email')
+      setMessage('Code sent to your email!')
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to send email code'
+      setError(msg)
+    } finally {
+      setLoading(null)
+    }
   }
 
-  if (magicSent) {
-    return (
-      <div className="text-center">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand-primary/10">
-          <Mail className="h-6 w-6 text-brand-primary" />
-        </div>
-        <h2 className="text-xl font-semibold text-brand-text mb-2">Check your email</h2>
-        <p className="text-brand-text-muted text-sm">
-          We sent a magic link to <span className="text-brand-text font-medium">{email}</span>
-        </p>
-        <button
-          onClick={() => setMagicSent(false)}
-          className="mt-4 text-sm text-brand-primary hover:underline"
-        >
-          Try a different method
-        </button>
-      </div>
-    )
+  const handleVerifyCode = async () => {
+    if (!otpCode || otpCode.length < 6) {
+      setError('Please enter the 6-digit code')
+      return
+    }
+    setLoading(method)
+    setError('')
+
+    try {
+      const supabase = createClient()
+
+      if (method === 'sms') {
+        const { error: authError } = await supabase.auth.verifyOtp({
+          phone: getRawPhone(),
+          token: otpCode,
+          type: 'sms',
+        })
+        if (authError) throw authError
+      } else {
+        // For email magic link, the code is verified via the link
+        // This is a fallback for email OTP if enabled
+        const res = await fetch('/api/auth/lookup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: getRawPhone() }),
+        })
+        const data = await res.json()
+        const { error: authError } = await supabase.auth.verifyOtp({
+          email: data.email,
+          token: otpCode,
+          type: 'email',
+        })
+        if (authError) throw authError
+      }
+
+      window.location.href = '/dashboard'
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Invalid code. Please try again.'
+      setError(msg)
+    } finally {
+      setLoading(null)
+    }
   }
 
   return (
-    <div>
-      <h2 className="text-xl font-semibold text-brand-text mb-1">Welcome back</h2>
-      <p className="text-sm text-brand-text-muted mb-6">Sign in to your account</p>
-
-      {error && (
-        <div className="mb-4 rounded-lg bg-brand-error/10 border border-brand-error/20 px-4 py-3 text-sm text-brand-error">
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={mode === 'password' ? handlePasswordLogin : handleMagicLink}>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-brand-text-secondary mb-1.5">Email</label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-text-muted" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@company.com"
-                required
-                className="w-full rounded-lg border border-brand-border bg-brand-bg pl-10 pr-4 py-2.5 text-sm text-brand-text placeholder:text-brand-text-muted outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-colors"
-              />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="w-full max-w-sm">
+        <div className="bg-white rounded-2xl shadow-lg p-8">
+          {/* Header */}
+          <div className="flex items-start gap-3 mb-6">
+            <div className="text-purple-600 mt-1">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">Sign in</h1>
+              <p className="text-sm text-gray-500 mt-0.5">
+                {codeSent ? 'Enter the code we sent you' : 'Enter your number to receive a code'}
+              </p>
             </div>
           </div>
 
-          {mode === 'password' && (
-            <div>
-              <label className="block text-sm font-medium text-brand-text-secondary mb-1.5">Password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-text-muted" />
+          {!codeSent ? (
+            <>
+              {/* Phone Input */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Phone number
+                </label>
                 <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
-                  required
-                  className="w-full rounded-lg border border-brand-border bg-brand-bg pl-10 pr-4 py-2.5 text-sm text-brand-text placeholder:text-brand-text-muted outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-colors"
+                  type="tel"
+                  value={phone}
+                  onChange={handlePhoneChange}
+                  placeholder="(555) 000-0000"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  maxLength={14}
                 />
               </div>
-            </div>
+
+              {/* SMS Button */}
+              <button
+                onClick={handleSendSMS}
+                disabled={loading !== null}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-3"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                </svg>
+                {loading === 'sms' ? 'Sending...' : 'Send code via SMS'}
+              </button>
+
+              {/* Email Button */}
+              <button
+                onClick={handleSendEmail}
+                disabled={loading !== null}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-500 font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="2"/>
+                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                </svg>
+                {loading === 'email' ? 'Sending...' : 'Send code to my email'}
+              </button>
+            </>
+          ) : (
+            <>
+              {/* OTP Input */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Verification code
+                </label>
+                <input
+                  type="text"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="000000"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-gray-900 text-center text-2xl tracking-widest placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  maxLength={6}
+                  autoFocus
+                />
+              </div>
+
+              {/* Verify Button */}
+              <button
+                onClick={handleVerifyCode}
+                disabled={loading !== null}
+                className="w-full py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-3"
+              >
+                {loading ? 'Verifying...' : 'Verify code'}
+              </button>
+
+              {/* Back Button */}
+              <button
+                onClick={() => { setCodeSent(false); setOtpCode(''); setMessage(''); setError('') }}
+                className="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-500 font-medium rounded-xl transition-colors"
+              >
+                Try a different number
+              </button>
+            </>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-2 rounded-lg bg-brand-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <>
-                {mode === 'password' ? 'Sign in' : 'Send magic link'}
-                <ArrowRight className="h-4 w-4" />
-              </>
-            )}
-          </button>
-        </div>
-      </form>
+          {/* Messages */}
+          {error && (
+            <p className="mt-4 text-sm text-red-600 text-center">{error}</p>
+          )}
+          {message && (
+            <p className="mt-4 text-sm text-green-600 text-center">{message}</p>
+          )}
 
-      <div className="mt-4 text-center">
-        <button
-          onClick={() => setMode(mode === 'password' ? 'magic' : 'password')}
-          className="text-sm text-brand-text-muted hover:text-brand-primary transition-colors"
-        >
-          {mode === 'password' ? 'Use magic link instead' : 'Use password instead'}
-        </button>
+          {/* Footer */}
+          <p className="mt-6 text-xs text-gray-400 text-center">
+            Only authorized TC staff can log in
+          </p>
+        </div>
       </div>
     </div>
   )
